@@ -1,0 +1,21 @@
+version: '2'
+
+services:
+  redis:
+    container_name: redis
+    image: bitnami/redis:latest
+    ports:
+      - '6379'
+    volumes:
+      - '/path/to/redis-persistence:/bitnami'
+    networks:
+      - backend
+  golang:
+    container_name: app1
+    build: ./
+    ports:
+      - 8000:8000
+    networks:
+      - backend
+networks:
+  backend:
