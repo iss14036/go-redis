@@ -8,18 +8,37 @@ import (
     "github.com/go-redis/redis/v7"
 )
 
-func worker(id int, wg *sync.WaitGroup, client *redis.Client) {
-    fmt.Printf("Worker %d starting\n", id)
+func workerWrite(id int, wg *sync.WaitGroup, client *redis.Client) {
+    defer wg.Done()
+    fmt.Printf("Worker write %d starting\n", id)
 
-	err := client.Set("key"+strconv.Itoa(id), "value"+strconv.Itoa(id), time.Minute).Err()
+	err := client.Set("key"+strconv.Itoa(id), "value"+strconv.Itoa(id), time.Minute * 3).Err()
 	if err != nil {
 		panic(err)
 	}
 
     time.Sleep(time.Second)
-    fmt.Printf("Worker %d done\n", id)
+    fmt.Printf("Worker write %d done\n", id)
 
-    wg.Done()
+}
+
+func workerRead(id int, wg *sync.WaitGroup, client *redis.Client) {
+	defer wg.Done()
+	fmt.Printf("Worker read %d starting\n", id)
+
+	val2, err := client.Get("key"+strconv.Itoa(id)).Result()
+	client.Del("key"+strconv.Itoa(id))
+	if err == redis.Nil {
+		fmt.Println("key"+strconv.Itoa(id)+" does not exist")
+	} else if err != nil {
+		panic(err.Error())
+	} else {
+		fmt.Println("key"+strconv.Itoa(id), val2)
+	}
+
+	time.Sleep(time.Second)
+	fmt.Printf("worker read"+strconv.Itoa(id)+" done\n")
+
 }
 
 func main() {
@@ -34,11 +53,19 @@ func main() {
 	fmt.Println(pong, err)
 
   	var wg sync.WaitGroup
+  	var wt sync.WaitGroup
 
   	for i := 1; i <=100000; i++ {
    	   wg.Add(1)
-   	   worker(i, &wg, client)
+   	   go workerWrite(i, &wg, client)
   	}
 
   	wg.Wait()
+
+	for i := 1; i <=100000; i++ {
+		wt.Add(1)
+		go workerRead(i, &wt, client)
+	}
+
+	wt.Wait()
 }
