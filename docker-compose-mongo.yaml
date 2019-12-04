@@ -9,4 +9,4 @@ services:
       ME_CONFIG_MONGODB_ADMINPASSWORD: root
       MONGO_INITDB_DATABASE: go-redis
     ports:
-      - 5432:5432
+      - 27017:27017
