@@ -1,0 +1,13 @@
+Worker-Consumer:
+    Listen Kafka
+    ->Dapat Message
+    ->Redis SADD {nama_tabel} {id_tabel} AND Redis SETEX {nama_tabel}:{id_tabel} 86400
+    -> Done
+
+Worker-Publisher:
+    Listen Redis SPOP -> Topic {nama_tabel}
+    ->Dapat Message
+    ->REDIS GET {nama_tabel}:{id_tabel}
+    ->Rebuild data
+    ->Publish to esb-log fronting
+    ->Done

@@ -41,6 +41,29 @@ func workerRead(id int, wg *sync.WaitGroup, client *redis.Client) {
 
 }
 
+func workerSaddWrite(id int, wg *sync.WaitGroup, client *redis.Client) {
+	defer wg.Done()
+	err := client.SAdd("t_user", id).Err()
+	if err != nil {
+		panic(err)
+	}
+	time.Sleep(time.Second)
+	fmt.Println("worker sadd write t_user"+strconv.Itoa(id)+" done")
+}
+
+func workerSpopRead(id int, wg *sync.WaitGroup, client *redis.Client) {
+	defer wg.Done()
+	val, err := client.SPop("t_user").Result()
+	if err == redis.Nil {
+		fmt.Println("key"+strconv.Itoa(id)+" does not exist")
+	} else if err != nil {
+		panic(err.Error())
+	} else {
+		fmt.Println("spop user ", val)
+	}
+
+}
+
 func main() {
 	client := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
@@ -57,14 +80,16 @@ func main() {
 
   	for i := 1; i <=100000; i++ {
    	   wg.Add(1)
-   	   go workerWrite(i, &wg, client)
+   	   //go workerWrite(i, &wg, client)
+   	   go workerSaddWrite(i, &wg, client)
   	}
 
   	wg.Wait()
 
 	for i := 1; i <=100000; i++ {
 		wt.Add(1)
-		go workerRead(i, &wt, client)
+		//go workerRead(i, &wt, client)
+		go workerSpopRead(i, &wt, client)
 	}
 
 	wt.Wait()
